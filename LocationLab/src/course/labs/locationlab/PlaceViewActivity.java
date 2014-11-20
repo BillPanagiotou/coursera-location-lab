@@ -14,7 +14,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class PlaceViewActivity extends ListActivity implements LocationListener {
@@ -37,68 +36,55 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 
 	// A fake location provider used for testing
 	private MockLocationProvider mMockLocationProvider;
-
-	private TextView footerView;
+	
+	private View footerView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Set up the app's user interface. This class is a ListActivity,
-		// so it has its own ListView. ListView's adapter should be a
-		// PlaceViewAdapter
+		// Set up the app's user interface. This class is a ListActivity, 
+		// so it has its own ListView. ListView's adapter should be a PlaceViewAdapter
 
 		mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 		ListView placesListView = getListView();
 
 		// TODO - add a footerView to the ListView
 		// You can use footer_view.xml to define the footer
-
 		LayoutInflater inflater = getLayoutInflater();
-		footerView = (TextView) inflater.inflate(R.layout.footer_view, null);
-		placesListView.setFooterDividersEnabled(true);
+		footerView = inflater.inflate(R.layout.footer_view, null);
 
 		// TODO - footerView must respond to user clicks, handling 3 cases:
 
-		// There is no current location - response is up to you. One good
+		// There is no current location - response is up to you. One good 
 		// solution is to disable the footerView until you have acquired a
 		// location.
 
 		// There is a current location, but the user has already acquired a
-		// PlaceBadge for this location. In this case issue a Toast message with
-		// the text -
-		// "You already have this location badge."
-		// Use the PlaceRecord class' intersects() method to determine whether
+		// PlaceBadge for this location. In this case issue a Toast message with the text -
+		// "You already have this location badge." 
+		// Use the PlaceRecord class' intersects() method to determine whether 
 		// a PlaceBadge already exists for a given location.
 
 		// There is a current location for which the user does not already have
-		// a PlaceBadge. In this case download the information needed to make a
-		// new
+		// a PlaceBadge. In this case download the information needed to make a new
 		// PlaceBadge.
-
+		
 		footerView.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View arg0) {
 				Log.i(TAG, "Entered footerView.OnClickListener.onClick()");
 
-				if (mLastLocationReading == null) {
-					Toast.makeText(getApplicationContext(),
-							"There is no current location", Toast.LENGTH_LONG)
-							.show();
+				if (mLastLocationReading == null){
+					Toast.makeText(PlaceViewActivity.this, "There is no current location.", Toast.LENGTH_LONG).show();
 					footerView.setEnabled(false);
-					return;
+				} else if (mAdapter.intersects(mLastLocationReading)){
+					Toast.makeText(PlaceViewActivity.this, "You already have this location badge", Toast.LENGTH_LONG).show();
+				} else {
+					new PlaceDownloaderTask(PlaceViewActivity.this, sHasNetwork).execute(mLastLocationReading);
 				}
-
-				if (mAdapter.intersects(mLastLocationReading)) {
-					Toast.makeText(getApplicationContext(),
-							"You already have this location badge.",
-							Toast.LENGTH_LONG).show();
-					return;
-				}
-
-				new PlaceDownloaderTask(PlaceViewActivity.this, sHasNetwork)
-						.execute(mLastLocationReading);
+				
 			}
 
 		});
@@ -118,18 +104,14 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		// TODO - Check NETWORK_PROVIDER for an existing location reading.
 		// Only keep this last reading if it is fresh - less than 5 minutes old
 
-		mLastLocationReading = mLocationManager
-				.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
-		if (mLastLocationReading != null
-				&& ageInMilliseconds(mLastLocationReading) > FIVE_MINS) {
+		mLastLocationReading = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+		
+		if (null != mLastLocationReading && ageInMilliseconds(mLastLocationReading) > FIVE_MINS)
 			mLastLocationReading = null;
-		}
 
 		// TODO - register to receive location updates from NETWORK_PROVIDER
-		mLocationManager.requestLocationUpdates(
-				LocationManager.NETWORK_PROVIDER, mMinTime, mMinDistance, this);
-
+		mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, mMinTime, mMinDistance, this);
+		
 	}
 
 	@Override
@@ -137,7 +119,7 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 
 		// TODO - unregister for location updates
 		mLocationManager.removeUpdates(this);
-
+		
 		shutdownMockLocationManager();
 		super.onPause();
 	}
@@ -146,35 +128,33 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 	public void addNewPlace(PlaceRecord place) {
 		Log.i(TAG, "Entered addNewPlace()");
 
-		// TODO - Attempt to add place to the adapter, considering the following
-		// cases
+		// TODO - Attempt to add place to the adapter, considering the following cases
 
-		// A PlaceBadge for this location already exists. In this case issue a
-		// Toast message
-		// with the text - "You already have this location badge." Use the
-		// PlaceRecord
-		// class' intersects() method to determine whether a PlaceBadge already
-		// exists
+		// A PlaceBadge for this location already exists. In this case issue a Toast message
+		// with the text - "You already have this location badge." Use the PlaceRecord 
+		// class' intersects() method to determine whether a PlaceBadge already exists
 		// for a given location. Do not add the PlaceBadge to the adapter
-
+		
 		// The place is null. In this case issue a Toast message with the text
 		// "PlaceBadge could not be acquired"
 		// Do not add the PlaceBadge to the adapter
-
-		// The place has no country name. In this case issue a Toast message
-		// with the text - "There is no country at this location".
-		// Do not add the PlaceBadge to the adapter
-
-		// Otherwise - add the PlaceBadge to the adapter
-
 		
-		if (null == place) {
-			Toast.makeText(PlaceViewActivity.this, "PlaceBadge could not be acquired", Toast.LENGTH_LONG).show();
-		} else if (place.getCountryName() == null || place.getCountryName().isEmpty()) {
-			Toast.makeText(PlaceViewActivity.this, "There is no country at this location", Toast.LENGTH_LONG).show();
+		// The place has no country name. In this case issue a Toast message
+		// with the text - "There is no country at this location". 
+		// Do not add the PlaceBadge to the adapter
+		
+		// Otherwise - add the PlaceBadge to the adapter
+		
+		if (null == place){
+			Toast.makeText(PlaceViewActivity.this, "Placebadge could not be acquired", Toast.LENGTH_LONG).show();
+		} else if (mAdapter.intersects(place.getLocation())) {
+			Toast.makeText(PlaceViewActivity.this, "You already have this location badge.", Toast.LENGTH_LONG).show();
+		} else if (place.getCountryName() == null || place.getCountryName().isEmpty()){
+			 Toast.makeText(PlaceViewActivity.this, "There is no country at this location.", Toast.LENGTH_LONG).show();
 		} else {
 			mAdapter.add(place);
 		}
+		
 	}
 
 	// LocationListener methods
@@ -189,12 +169,14 @@ public class PlaceViewActivity extends ListActivity implements LocationListener 
 		// 3) If the current location is newer than the last locations, keep the
 		// current location.
 
-		if (mLastLocationReading == null
-				|| ageInMilliseconds(currentLocation) < ageInMilliseconds(mLastLocationReading))
+		if (mLastLocationReading == null ||
+				ageInMilliseconds(currentLocation) < ageInMilliseconds(mLastLocationReading)) {
 			mLastLocationReading = currentLocation;
-
-		footerView.setEnabled(true);
-
+			footerView.setEnabled(true);
+		} else {
+			mLastLocationReading = null;
+		}
+		
 	}
 
 	@Override
